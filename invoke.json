@@ -1,0 +1,15 @@
+{
+  "jsonrpc": "2.0",
+  "method": "invoke",
+  "params": {
+      "type": 1,
+      "chaincodeID":{
+          "name":"ID"
+      },
+      "ctorMsg": {
+         "function":"invoke",
+         "args":["a", "b","1000"]
+      }
+  },
+  "id": 3
+}
