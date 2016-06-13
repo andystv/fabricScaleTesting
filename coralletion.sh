@@ -3,7 +3,7 @@
 echo "clusterSize ,delay, workers, iterations, tps";
 for clusterSize in 4 7 10 13 16 19 22; do
 	for delay in 1 5 10 20 50 ; do
-		for workerNum in 1 ; do 
+		for workerNum in 1 2 5 10 50 ; do 
 			for iter in 5000 ; do 
 				export WORKERNUM=$workerNum; 
 				export ITERATIONS=$iter; 
