@@ -166,7 +166,7 @@ while :; do
 	(( i += 1 ))
 	if [[ $i -eq 500 ]] ;then
 		echo $1 $tps "replicationFailed"
-		exit 1
+		break;
 	fi
 	echo $PEERS | grep -Eo "172.17.0.[0-9]+" | while read ip; do
 		curl -v -X POST -d @query.txt http://$ip:5000/chaincode &> /dev/null
