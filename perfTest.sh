@@ -2,6 +2,11 @@
 
 test -d node_modules/request || (echo -n "npm install request... "; npm install request &> /dev/null ; echo "OK")
 
+if [ "$1" == "50ms" ];then
+	echo "$1 skipping"
+	exit 1
+fi
+
 function printChaincodeSequences() {
 for m in `seq 1 10`; do
         sleep 5
@@ -78,11 +83,15 @@ sleep 20
 
 
 export PEERS=`curl http://172.17.0.2:5000/network/peers 2> /dev/null`
+echo $PEERS
 
 function waitForStabilization() {
 nodejs << EOF
 var request = require('request');
 var heights = {}
+var start = new Date().getTime();
+var lastHeight = 0;
+var timesLastHeight = 0;
 function query(uri) {
 	request('http://' + uri + '/chain', function (error, response, body) {
 	  if (!error && response.statusCode == 200) {
@@ -91,7 +100,7 @@ function query(uri) {
 		if (uri.indexOf('0.2') == -1) {
 			return;
 		}
-		console.log(heights);
+		//console.log(heights);
 		var same = true;
 		for (i in heights) {
 			var url = i;
@@ -99,8 +108,18 @@ function query(uri) {
 				same = false;
 			}
 		}
-		if (same) {
-			process.exit(0);
+		if (! same) {
+			return;
+		}
+		if (lastHeight === heights[uri]) {
+			timesLastHeight++;
+			if (timesLastHeight > 30) {
+				console.log(heights);
+				process.exit(0);
+			}	
+		} else {
+			lastHeight = heights[uri];
+			timesLastHeight = 0;
 		}
 	  }
 	});
@@ -125,20 +144,46 @@ echo "Running benchmark..."
 
 tps=`nodejs bench.js $id | grep TPS | awk '{print $NF}' 2> err.log`
 
-if [ "$2" == "--test" ];then
-	waitForStabilization
-	exit 0
-fi
-
 
 
 #cpuTime=0
 #docker ps | grep peer | awk '{print $1}' | while read container; do 
 #	docker exec $container cat /proc/1/stat  | awk '{printf("%d\n",$14/100)}'; 
 #done 
+export TRANS_ID=$id
+nodejs << EOF > query.txt
+var queryData  = require('fs').readFileSync('query.json');
+var queryJSON  = JSON.parse(queryData);
+queryJSON.params.chaincodeID.name = '$TRANS_ID';
+console.log(JSON.stringify(queryJSON));
+EOF
 
+start=`date +%s`
+peerNum=`echo $PEERS | grep -o -n ID | wc -l`
+i=0
+while :; do
+	sleep 1
+	(( i += 1 ))
+	if [[ $i -eq 500 ]] ;then
+		echo $1 $tps "replicationFailed"
+		exit 1
+	fi
+	echo $PEERS | grep -Eo "172.17.0.[0-9]+" | while read ip; do
+		curl -v -X POST -d @query.txt http://$ip:5000/chaincode &> /dev/null
+	done
+	n=`docker ps -q | head -1 | while read cont;do docker logs $cont 2>&1  | grep Amount | tail -1; done | cut -d: -f4 | sed "s/}//g; s/\"//g"`
+	if [ "$n" == "" ];then
+		docker ps -q | head -1 | while read cont;do docker logs $cont 2>&1 | tail -10; done
+		continue;
+	fi
+	echo $n
+	if [ $n -lt 1 ];then
+		break;
+	fi
+done
+end=`date +%s`
 
-echo $1 $tps | tee -a tps.log
+echo $1 $tps $(( $end - $start )) | tee -a tps.log
 
 echo "Tearing down containers"
 docker ps -q | xargs docker kill  &> /dev/null

@@ -9,7 +9,7 @@ var ID = null;
 
 peers=JSON.parse(process.env.PEERS).peers.map(function(peer) {return peer.address.replace('30303','5000')});
 
-var iterations=parseInt(process.env.ITERATIONS || "5000");
+var iterations=parseInt(process.env.ITERATIONS || "1000");
 var workerNum = parseInt(process.env.WORKERNUM || "1");
 
 var invokeJson = JSON.parse(invokeData);
@@ -22,14 +22,12 @@ var fs = require('fs');
 var invokeLog = 'invTime.iter=' + iterations + '.wn=' + workerNum + '.log';
 var errLog = 'errors.wn=' + workerNum + '.log';
 
-//fs.writeFile(invokeLog,'n,duration\n',function() {});
+fs.writeFile(invokeLog,'n,duration\n',function() {});
 
 function invoke(data,invocationTime) {
 	var end = new Date().getTime();
-	/*
 	fs.appendFile(invokeLog,i + "," + new Date().toString() + "," + invocationTime + "\n", function() {
 	});
-	*/
 
         if (i++ >=  iterations) {
                 var elapsed = end - start

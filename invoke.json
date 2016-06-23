@@ -8,7 +8,7 @@
       },
       "ctorMsg": {
          "function":"invoke",
-         "args":["a", "b","1000"]
+         "args":["a", "b","1"]
       }
   },
   "id": 3
