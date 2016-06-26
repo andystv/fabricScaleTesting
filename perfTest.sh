@@ -31,7 +31,8 @@ else
 	echo "Executing PBFT classic"
 fi
 
-RUN_CMD="node start --logging-level=debug"
+#RUN_CMD="node start --logging-level=debug"
+RUN_CMD="node start"
 
 
 if [ $# -eq 0 ];then
@@ -142,8 +143,16 @@ done
 
 echo "Running benchmark..."
 
-tps=`nodejs bench.js $id | grep TPS | awk '{print $NF}' 2> err.log`
+#tps=`nodejs bench.js $id | grep TPS | awk '{print $NF}' 2> err.log`
+tps=`./invoker $id $BATCHSIZE | tail -1`
 
+echo $1 $tps | tee -a tps.log
+
+echo "Tearing down containers"
+docker ps -q | xargs docker kill  &> /dev/null
+docker ps -aq | xargs docker rm &> /dev/null
+
+exit 0
 
 
 #cpuTime=0
